@@ -20,11 +20,20 @@ class Config
     private function __wakeup() {  }
     private function __clone() {  }
 
+    /**
+     * Initialize.
+     */
     private function __construct() 
     {
         $this->arr = new Arr;
     }
 
+    /**
+     * Load the configuration.
+     *
+     * @param string    $filename
+     * @param array     $defaults
+     */
     public function load($filename, $defaults = [])
     {
         $this->createConfigFile($filename, $defaults);
@@ -52,6 +61,14 @@ class Config
         }
     }
 
+    /**
+     * Get key from array as path.
+     *
+     * @param string    $path
+     * @param array     $arr
+     *
+     * @return mixed
+     */
     public function get($path, $arr = [])
     {
         if (empty($path)) {
@@ -60,13 +77,33 @@ class Config
 
         if (count($arr)) {
             $at = &$arr;
-        } else {
-            $at = &$this->attributes;
+
+            return $this->arr->get($path, $at);
         }
 
-        return $this->arr->get($path, $at);
+        if (isset($this->attributes[$path])) {
+            return $this->attributes[$path];
+        }
+
+        return null;
     }
 
+    /**
+     * Set value.
+     *
+     * @param string    $path
+     * @param string    $value
+     */
+    public function set($path, $value)
+    {
+        $this->attributes[$path] = $value;
+    }
+
+    /**
+     * Get the current configuration values.
+     *
+     * @return array
+     */
     public function getAttributes()
     {
         return $this->attributes;

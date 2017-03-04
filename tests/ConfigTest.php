@@ -11,6 +11,25 @@ namespace OussamaElgoumri\Config;
 
 class ConfigTest extends \PHPUnit_Framework_TestCase
 {
+    public function test_set()
+    {
+        $inst = Config::getInstance();
+        $inst->load('test', [
+            'key1' => [
+                'key1' => 'value1',
+            ],
+        ]);
+
+        $inst->set('key1.key1', 'modified');
+        $this->assertEquals($inst->get('key1.key1'), 'modified');
+
+        $inst->set('key1.key2', 'modified2');
+        $this->assertEquals($inst->get('key1.key2'), 'modified2');
+
+        $inst->set('key2.key1', 'modified3');
+        $this->assertEquals($inst->get('key2.key1'), 'modified3');
+    }
+
     public function test_setAttributes()
     {
         if (!is_dir(base_path('config'))) {
