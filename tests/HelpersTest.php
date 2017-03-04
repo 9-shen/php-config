@@ -18,6 +18,8 @@ class HelpersTest extends \PHPUnit_Framework_TestCase
                 'key1' => 'value',
             ],
         ]);
+
+        unlink(base_path('config/test.php'));
     }
 
     public function test_Config__load()

@@ -16,6 +16,8 @@ class Config
     protected $arr;
     protected $defaults;
     protected $attributes;
+    protected $config_file;
+    protected $config_file_type;
 
     private function __wakeup() {  }
     private function __clone() {  }
@@ -44,7 +46,7 @@ class Config
             $this->createConfigFile($filename, $defaults);
         }
 
-        $this->setAttributes($filename, $defaults);
+        $this->setAttributes($defaults);
     }
 
     /**
@@ -52,13 +54,19 @@ class Config
      *
      * @param array     $defaults
      */
-    public function setAttributes($filename, $defaults)
+    public function setAttributes($defaults)
     {
         $defaults = $this->arr->flatify($defaults);
         $from_dotenv_file = $this->parseDotenvFile();
 
-        if ($filename) {
-            $from_config_file = require $this->getFilename($filename);
+        if ($this->config_file) {
+            if ($this->config_file_type === 'php') {
+                $from_config_file = require $this->config_file;
+            } elseif ($this->config_file_type === 'json') {
+                $from_config_file = json_decode($this->config_file, true);
+            } else {
+                throw new \Exception("Unsupported config file type: {$this->config_file_type}");
+            }
         } else {
             $from_config_file = [];
         }
@@ -178,13 +186,17 @@ class Config
      */
     public function createConfigFile($filename, $defaults)
     {
-        $file = $this->getFilename($filename);
+        $this->setConfigFilename($filename);
 
-        if (!file_exists($file)) {
-            $content = file_get_contents(__DIR__ . '/../stubs/new-config-file.txt');
-            $content = str_replace('%date%', date('D M  j H:i:s T Y'), $content);
-            $content = str_replace('%defaults%', $this->arr->getWritableToFile($defaults), $content);
-            file_put_contents($file, $content);
+        if (!file_exists($this->config_file)) {
+            if ($this->config_file_type === 'php') {
+                $content = file_get_contents(__DIR__ . '/../stubs/new-config-file.txt');
+                $content = str_replace('%date%', date('D M  j H:i:s T Y'), $content);
+                $content = str_replace('%defaults%', $this->arr->getWritableToFile($defaults), $content);
+                file_put_contents($this->config_file, $content);
+            } elseif ($this->config_file_type === 'json') {
+                file_put_contents($this->config_file, json_encode($defaults, JSON_PRETTY_PRINT));
+            }
         }
     }
 
@@ -194,7 +206,7 @@ class Config
      * @param  string    $filename
      * @return string
      */
-    private function getFilename($filename)
+    private function setConfigFilename($filename)
     {
         $file = base_path("config/{$filename}");
 
@@ -202,11 +214,13 @@ class Config
             mkdir(base_path('config'), 0777);
         }
 
-        if (!preg_match('/.*\.php$/', $file)) {
-            $file .= ".php";
+        if (preg_match('/.*\.(json|php)$/', $file, $m)) {
+            $this->config_file_type = $m[1];
+            $this->config_file = $file;
+        } else {
+            $this->config_file_type = 'php';
+            $this->config_file = "{$file}.php";
         }
-
-        return $file;
     }
 
     /**

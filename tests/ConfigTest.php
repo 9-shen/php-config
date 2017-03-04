@@ -28,6 +28,8 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         $inst->load('test', ['key1' => 'value']);
         $this->assertEquals($inst->getAttributes(), ['key1' => 'value']);
         $this->assertFileExists(base_path('config/test.php'));
+
+        unlink(base_path('config/test.php'));
     }
 
     public function test_set()
@@ -47,6 +49,8 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
 
         $inst->set('key2.key1', 'modified3');
         $this->assertEquals($inst->get('key2.key1'), 'modified3');
+
+        unlink(base_path('config/test.php'));
     }
 
     public function test_setAttributes()
@@ -56,40 +60,25 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         }
 
         $inst = Config::getInstance();
-        $file = base_path('config/test.php');
 
-        if (file_exists($file)) {
-            unlink($file);
+        if (file_exists(base_path('config/test.php'))) {
+            unlink(base_path('config/test.php'));
+        }
+
+        if (file_exists(base_path('config/test.json'))) {
+            unlink(base_path('config/test.json'));
         }
 
         if (file_exists(base_path('.env'))) {
             unlink(base_path('.env'));
         }
-        
-        $content = <<<CONTENT
-<?php
 
-return [
-    'key1' => [
-        'key1' => 'value',
-        'key2' => [
-            'key3' => '',
-            'key4' => 12,
-        ],
-    ],
-    'key2' => true,
-    'key3' => '',
-    'key4' => 'value2',
-    'fake' => 'should not read me',
-];
-CONTENT;
-
-        file_put_contents($file, $content);
         file_put_contents(base_path('.env'),
             'key1.key1="modified"' . PHP_EOL .
             'key4="modified2"'
         );
-        $inst->setAttributes('test', [
+
+        $defaults = [
             'key1' => [
                 'key1' => 'default',
                 'key2' => 'default',
@@ -100,10 +89,23 @@ CONTENT;
             'key5' => [
                 'key1' => 'value',
             ],
-        ]);
+        ];
 
-        $results = $inst->getAttributes();
-        $this->assertEquals($results, [
+        $config_file_content = [
+            'key1' => [
+                'key1' => 'value',
+                'key2' => [
+                    'key3' => '',
+                    'key4' => 12,
+                ],
+            ],
+            'key2' => true,
+            'key3' => '',
+            'key4' => 'value2',
+            'fake' => 'should not read me',
+        ];
+
+        $expect = [
             'key1.key1' => 'modified',
             'key1.key2' => [
                 'key3' => '',
@@ -113,9 +115,27 @@ CONTENT;
             'key3' => 'default',
             'key4' => 'modified2',
             'key5.key1' => 'value',
-        ]);
+        ];
 
-        unlink($file);
+        $inst->createConfigFile('test', $config_file_content);
+        $inst->setAttributes($defaults);
+        $results = $inst->getAttributes();
+        $this->assertEquals($results, $expect);
+
+        $inst->__destruct();
+        $inst->createConfigFile('test.json', $config_file_content);
+        $inst->setAttributes($defaults);
+        $results = $inst->getAttributes();
+        $this->assertEquals($results, $expect);
+
+        $inst->__destruct();
+        $inst->createConfigFile('test.php', $config_file_content);
+        $inst->setAttributes($defaults);
+        $results = $inst->getAttributes();
+        $this->assertEquals($results, $expect);
+
+        unlink(base_path('config/test.php'));
+        unlink(base_path('config/test.json'));
     }
 
     public function test_parseDotenvFile()
@@ -143,6 +163,8 @@ CONTENT;
             'path4.path5' => 'value3',
             'path.path1.path3' => true,
         ]);
+
+        unlink($file);
     }
 
     public function test_createConfigFile()
