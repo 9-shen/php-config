@@ -7,6 +7,4 @@
 // %date%
 //
 
-return [
-    
-];
+return %defaults%

@@ -13,16 +13,21 @@ class Config
 {
     static $instance;
 
+    protected $arr;
     protected $defaults;
     protected $attributes;
 
-    private function __construct() {  }
     private function __wakeup() {  }
     private function __clone() {  }
 
+    private function __construct() 
+    {
+        $this->arr = new Arr;
+    }
+
     public function load($filename, $defaults = [])
     {
-        $this->createConfigFile($filename);
+        $this->createConfigFile($filename, $defaults);
         $this->setAttributes($filename, $defaults);
     }
 
@@ -33,7 +38,7 @@ class Config
      */
     public function setAttributes($filename, $defaults)
     {
-        $defaults = $this->flatify($defaults);
+        $defaults = $this->arr->flatify($defaults);
         $from_config_file = require $this->getFilename($filename);
         $from_dotenv_file = $this->parseDotenvFile();
 
@@ -47,73 +52,24 @@ class Config
         }
     }
 
+    public function get($path, $arr = [])
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        if (count($arr)) {
+            $at = &$arr;
+        } else {
+            $at = &$this->attributes;
+        }
+
+        return $this->arr->get($path, $at);
+    }
+
     public function getAttributes()
     {
         return $this->attributes;
-    }
-
-    /**
-     * Make array accessible via dot notation.
-     *
-     * @param  array     $arr
-     * @return array
-     */
-    public function flatify($arr)
-    {
-        if (empty($arr) || !is_array($arr)) {
-            return $arr;
-        }
-
-        $path = [];
-        foreach ($arr as $key => $value) {
-            if (!is_string($key) && is_string($value)) {
-                $key = $value;
-                $value = '';
-            } elseif(!is_string($key)) {
-                continue;
-            }
-
-            $path[] = $this->_flatify($key, $value);
-        }
-
-        $ret = [];
-        array_walk_recursive($path, function($item, $key) use(&$ret) {
-            $ret[$key] = $item;
-        });
-
-        return $ret;
-    }
-
-    /**
-     * Go on a single row.
-     *
-     * @param string    $key
-     * @param string    $value
-     * @param string    $depth
-     *
-     * @return array
-     */
-    private function _flatify($key, $value, $depth = '')
-    {
-        $path = [];
-        $depth = empty($depth) ? $key : "{$depth}.{$key}";
-
-        if (!is_array($value)) {
-            return [$depth => $value];
-        }
-
-        foreach ($value as $k => $v) {
-            if (!is_string($k) && is_string($v)) {
-                $k = $v;
-                $v = '';
-            } elseif(!is_string($k)) {
-                continue;
-            }
-
-            $path[] = $this->_flatify($k, $v, $depth);
-        }
-
-        return $path;
     }
 
     /**
@@ -167,56 +123,18 @@ class Config
     }
 
     /**
-     * Get value by dot notation.
-     *
-     * @param string    $path
-     * @param array     $arr
-     *
-     * @return mixed
-     */
-    public function get($path, $arr = [])
-    {
-        if (empty($path)) {
-            return null;
-        }
-
-        if (count($arr)) {
-            $at = &$arr;
-        } else {
-            $at = &$this->attributes;
-        }
-
-        $found = false;
-        $keys = array_filter(explode('.', $path));
-
-        while ($key = array_shift($keys)) {
-            if (isset($at[$key])) {
-                $found = true;
-                $at = &$at[$key];
-            } else {
-                break;
-            }
-        }
-
-        if ($found) {
-            return $at;
-        }
-
-        return null;
-    }
-
-    /**
      * Create config filename.
      *
      * @param string    $filename
      */
-    public function createConfigFile($filename)
+    public function createConfigFile($filename, $defaults)
     {
         $file = $this->getFilename($filename);
 
         if (!file_exists($file)) {
             $content = file_get_contents(__DIR__ . '/../stubs/new-config-file.txt');
             $content = str_replace('%date%', date('D M  j H:i:s T Y'), $content);
+            $content = str_replace('%defaults%', $this->arr->getWritableToFile($defaults), $content);
             file_put_contents($file, $content);
         }
     }
