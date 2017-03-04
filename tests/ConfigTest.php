@@ -11,6 +11,25 @@ namespace OussamaElgoumri\Config;
 
 class ConfigTest extends \PHPUnit_Framework_TestCase
 {
+    public function test_load()
+    {
+        $inst = Config::getInstance();
+        
+        $inst->load();
+        $this->assertTrue(is_array($inst->getAttributes()));
+        $this->assertEmpty($inst->getAttributes());
+
+        if (file_exists(base_path('config/test.php'))) {
+            unlink(base_path('config/test.php'));
+        }
+
+        $inst->__destruct();
+        $inst = Config::getInstance();
+        $inst->load('test', ['key1' => 'value']);
+        $this->assertEquals($inst->getAttributes(), ['key1' => 'value']);
+        $this->assertFileExists(base_path('config/test.php'));
+    }
+
     public function test_set()
     {
         $inst = Config::getInstance();

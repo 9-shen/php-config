@@ -34,9 +34,16 @@ class Config
      * @param string    $filename
      * @param array     $defaults
      */
-    public function load($filename, $defaults = [])
+    public function load($filename = '', $defaults = [])
     {
-        $this->createConfigFile($filename, $defaults);
+        if (empty($defaults)) {
+            return $this->attributes = [];
+        }
+
+        if (!empty($filename)) {
+            $this->createConfigFile($filename, $defaults);
+        }
+
         $this->setAttributes($filename, $defaults);
     }
 
@@ -48,8 +55,13 @@ class Config
     public function setAttributes($filename, $defaults)
     {
         $defaults = $this->arr->flatify($defaults);
-        $from_config_file = require $this->getFilename($filename);
         $from_dotenv_file = $this->parseDotenvFile();
+
+        if ($filename) {
+            $from_config_file = require $this->getFilename($filename);
+        } else {
+            $from_config_file = [];
+        }
 
         foreach ($defaults as $key => $value) {
             if (!empty($from_dotenv_file[$key])) {
