@@ -68,3 +68,15 @@ if (!function_exists('Config__set')) {
         Config::getInstance()->set($path, $value);
     }
 }
+
+if (!function_exists('Config__getAttributes')) {
+    /**
+     * Get all the attributes at runtime.
+     *
+     * @return array
+     */
+    function Config__getAttributes()
+    {
+        return Config::getInstance()->getAttributes();
+    }
+}
