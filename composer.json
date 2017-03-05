@@ -6,15 +6,15 @@
     "autoload": {
         "psr-4": {
             "OussamaElgoumri\\Config\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "OussamaElgoumri\\Config\\": "tests/"
         },
         "files": [
             "src/helpers.php"
         ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OussamaElgoumri\\Config\\": "tests/"
+        }
     },
     "require": {
         "elgoumri-oussama/php-base-path": "^0.0.1"
