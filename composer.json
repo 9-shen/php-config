@@ -1,4 +1,5 @@
 {
+    "name": "elgoumri-oussama/php-config",
     "require-dev": {
         "phpunit/phpunit": "^6.0"
     },
